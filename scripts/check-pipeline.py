@@ -120,7 +120,14 @@ def main() -> int:
         failures += 1
 
     # 2 and 3. Injected contamination is detected and measured.
-    with tempfile.TemporaryDirectory(dir=ROOT / "var") as scratch:
+    #
+    # `var/` is gitignored, so on a fresh clone it does not exist and
+    # TemporaryDirectory(dir=...) raises FileNotFoundError. Created here
+    # rather than assumed: this script's whole job is to run on a checkout
+    # nobody has run anything else in yet.
+    scratch_root = ROOT / "var"
+    scratch_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=scratch_root) as scratch:
         for rate, tolerance in INJECTIONS.items():
             splits = contaminated_split(rate, Path(scratch) / f"inject-{int(rate * 100)}")
             code, stdout, stderr = dslm(
