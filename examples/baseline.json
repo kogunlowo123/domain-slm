@@ -1,0 +1,22 @@
+{
+  "dslm_baseline": 1,
+  "measured_on": {
+    "contamination_calibrated": true,
+    "contamination_rate": 0.0,
+    "corpus_digest": "sha256:f179f29f9cf4a75e91b856370e0da1b0a9ac8fa5a6d9dafacb6a94bb6afc2621",
+    "split_digest": "sha256:f179f29f2f3e0d539d430c28",
+    "tokenizer_digest": "sha256:4e2027b5f90a1f1778598a0d1ddfe81ec2098d64e78d67a0845e2f9f199ce695"
+  },
+  "metrics": {
+    "naive-bayes": {
+      "accuracy": 0.92029,
+      "macro_f1": 0.919273
+    },
+    "neural": {
+      "accuracy": 0.923913,
+      "macro_f1": 0.922842
+    }
+  },
+  "note": "",
+  "recorded_at": "2026-09-08T10:14:39+00:00"
+}

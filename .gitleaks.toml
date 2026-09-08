@@ -1,0 +1,24 @@
+# gitleaks configuration.
+#
+# The default rule set is used in full; this file records allowlist entries,
+# each with a justification. An allowlist entry without a reason is a suppressed
+# finding, which is indistinguishable from an unnoticed one.
+#
+# **This repository has no credential fixtures.** It handles no credentials,
+# reads no tokens and authenticates to nothing, so unlike the other projects in
+# this series there are no credential-shaped strings to allowlist. That is the
+# strongest version of the control: nothing to suppress because there is nothing
+# there.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Repository-wide allowlist"
+
+regexes = [
+  # Content addresses. A sha256 digest of a corpus or a tokenizer is not a
+  # secret, and they appear throughout the documentation, the baseline and the
+  # example reports.
+  '''sha256:[0-9a-f]{16,64}''',
+]
