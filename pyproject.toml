@@ -1,0 +1,214 @@
+[project]
+name = "dslm"
+version = "0.1.0"
+description = "A small domain language model you can trust: contamination-gated evaluation, a domain tokenizer trained from scratch, and a model small enough to train on a laptop in seconds."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Kayode Ogunlowo" }]
+keywords = [
+  "slm", "nlp", "tokenizer", "bpe", "contamination", "deduplication",
+  "minhash", "machine-learning", "reproducibility",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Text Processing :: Linguistic",
+  "Typing :: Typed",
+]
+
+# Five runtime dependencies. NumPy is the first non-pure-Python dependency in
+# this series and it earns its place: the alternative is a training loop written
+# in Python for-loops, two orders of magnitude slower, which would make "trains
+# in seconds on a laptop" false. It is also the *smallest* thing that does the
+# job. A deep learning framework here would be a 900 MB dependency serving a
+# model with three weight matrices, and it would take the reproducibility
+# question — the one this repository is actually about — out of our hands.
+dependencies = [
+  "numpy>=1.26,<3",
+  "pydantic>=2.9,<3",
+  "pydantic-settings>=2.6,<3",
+  "structlog>=26.1.0,<27",
+  "pyyaml>=6.0,<7",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=9.0.3,<10",
+  "pytest-cov>=7.0,<8",
+  "ruff>=0.16,<0.17",
+  "mypy>=2.3.1,<3",
+  "bandit[toml]>=1.9.4,<2",
+  "pip-audit>=2.9,<3",
+  "types-pyyaml>=6.0,<7",
+]
+
+# Kept apart from `dev` so the documentation job installs a renderer and nothing
+# else. A Pages build that pulls in pytest and mypy is three minutes of a runner
+# spent on tools it will not run.
+docs = [
+  "markdown-it-py>=4.0,<5",
+  "mdit-py-plugins>=0.5,<1",
+  "pygments>=2.19,<3",
+  "types-Pygments>=2.19,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/kogunlowo123/domain-slm"
+Documentation = "https://kogunlowo123.github.io/domain-slm/"
+Source = "https://github.com/kogunlowo123/domain-slm"
+Issues = "https://github.com/kogunlowo123/domain-slm/issues"
+Changelog = "https://github.com/kogunlowo123/domain-slm/blob/main/CHANGELOG.md"
+
+[project.scripts]
+dslm = "dslm.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.32.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dslm"]
+
+[tool.uv]
+default-groups = []
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+  "--strict-markers",
+  "--strict-config",
+  "-ra",
+]
+markers = [
+  "unit: pure logic, no I/O and no network",
+  "integration: several components wired together against real temporary files",
+  "security: adversarial cases; a failure here is a security regression",
+  "e2e: the command line driven end to end as a real process",
+  "meta: the gate's own negative controls",
+]
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/dslm"]
+omit = ["src/dslm/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "@overload",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "A", "ARG", "ASYNC", "B", "BLE", "C4", "C90", "D", "DTZ", "E", "EM", "ERA",
+  "F", "FBT", "FLY", "G", "I", "ICN", "INP", "ISC", "LOG", "N", "PERF", "PGH",
+  "PIE", "PL", "PT", "PTH", "PYI", "Q", "RET", "RSE", "RUF", "S", "SIM", "SLF",
+  "SLOT", "T10", "T20", "TCH", "TID", "TRY", "UP", "W", "YTT",
+]
+ignore = [
+  # A docstring on every __init__ restates the class docstring one line below
+  # it. The class is documented; the constructor is not a separate idea.
+  "D107",
+  # Likewise for dunders: "Return the number of entries." above __len__ is a
+  # line of text that tells a reader what they already know.
+  "D105",
+  # Conflicts with the formatter.
+  "ISC001",
+  # This project's exception messages are written for the person reading the
+  # traceback, which means they are sentences, in the raise, at the call site.
+  "TRY003", "EM101", "EM102",
+  # A docstring whose first line is a question ends with a question mark, and a
+  # property's docstring names what the property *is* rather than what calling
+  # it does. "The fraction correct." is better English than "Return the fraction
+  # correct." on a property, and rewording every accessor to satisfy a mood rule
+  # makes the documentation worse in order to make the linter quieter.
+  "D400", "D401", "D415",
+  # Typing-only imports are not moved into `if TYPE_CHECKING` blocks. Pydantic
+  # resolves annotations at runtime, so the rule cannot be applied uniformly
+  # here, and a codebase where some imports live in a conditional block and
+  # others do not is harder to read than one where none do.
+  "TC001", "TC003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+  "D",        # test names are the documentation
+  "PLR2004",  # a literal in an assertion is the assertion
+  "S101",     # pytest is built on assert
+  "S105", "S106",  # credential-shaped fixtures, built by concatenation
+  "S311",     # seeded PRNGs in tests are fixtures, not cryptography
+  "S603",     # tests launch the CLI as a subprocess with fixed argument vectors
+  "SLF001",   # tests reach into private helpers on purpose
+  "ARG001", "ARG002", "ARG005",  # fixtures and stubs take arguments they ignore
+  "PLC0415",  # a local import keeps a test's dependency next to its assertion
+  "RUF012",
+  "FBT003",   # a boolean argument in a test call is the case being tested
+  "PIE808",
+  "S314",     # tests parse XML this package itself generated a line earlier
+  "FLY002",   # a join of named parts reads better than an f-string in a fixture
+  "ICN001",   # no invented abbreviations for module names in this codebase
+  "PLR0913",  # a training run has many hyperparameters, so its factory takes many
+  "N803", "N806",  # X, W1, W2: the notation the maths is written in
+]
+# The command line writes its report to stdout. That is the interface, not a
+# stray debugging statement.
+"src/dslm/cli.py" = ["T201"]
+"examples/**" = ["D", "T201", "INP001", "E402", "PLR2004", "PLC0415"]
+# check-incidents.py asserts against the report shape it just parsed;
+# an `assert` there is a test assertion, not a runtime guard.
+"scripts/**" = ["D", "T201", "INP001", "E402", "S101"]
+# Weight matrices are written the way the maths is written: X, W1, W2, E.
+# Renaming them to satisfy a naming rule would make the code harder to check
+# against the derivation it implements.
+"src/dslm/model/*.py" = ["N803", "N806"]
+"tasks.py" = ["D", "T201", "S603", "S607"]
+"tasks_local.py" = ["D", "T201", "S603", "S607"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.ruff.lint.isort]
+known-first-party = ["dslm"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+warn_unused_configs = true
+disallow_any_generics = true
+no_implicit_reexport = true
+show_error_codes = true
+files = ["src", "tests", "examples", "scripts", "tasks.py"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "var"]

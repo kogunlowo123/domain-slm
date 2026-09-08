@@ -1,0 +1,93 @@
+# Running the pipeline against your own corpus, without installing anything.
+#
+# This is a command-line tool, so there is no long-running service here. Each
+# entry below is a one-shot container that reads from ./work, writes to
+# ./reports, and exits with the code the gate decided — 0 held, 2 a gate failed,
+# 3 the tool could not run.
+#
+#   docker compose run --rm doctor
+#   docker compose run --rm synth
+#   docker compose run --rm pipeline
+#   docker compose run --rm evaluate
+#
+# `docker compose up` would start them all and immediately report them as
+# exited, which is why every service sets `profiles`: nothing starts unless it
+# is named.
+#
+# ./reports must be writable by uid 10001 — the image does not run as root. On
+# Linux a bind mount carries the host's ownership straight through, so
+# `chmod 0777 reports` once, or create it before the first run.
+#
+# Every service sets `network_mode: none`. That costs nothing here: this package
+# has no HTTP client and no socket anywhere in it, and saying so in the compose
+# file makes the property visible rather than merely true.
+
+x-common: &common
+  image: domain-slm:local
+  network_mode: none
+  volumes:
+    - ./work:/app/work
+    - ./reports:/app/reports
+  environment:
+    DSLM_LOG__FORMAT: json
+    DSLM_LOG__LEVEL: INFO
+
+services:
+  # What this installation would do, with no files at all. The first thing to
+  # run after a build.
+  doctor:
+    <<: *common
+    profiles: [tools]
+    build:
+      context: .
+      args:
+        PYTHON_VERSION: "3.12"
+    command: [doctor]
+
+  # Generate a corpus and a disjoint holdout to calibrate against.
+  synth:
+    <<: *common
+    profiles: [tools]
+    command:
+      - synth
+      - --plan=main
+      - --out=work/corpus.jsonl.gz
+
+  # Curate, split and train, in one go.
+  pipeline:
+    <<: *common
+    profiles: [tools]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        dslm synth --plan holdout --out work/holdout.jsonl.gz &&
+        dslm curate --corpus work/corpus.jsonl.gz --out work/clean.jsonl.gz
+        --card reports/DATA-CARD.md &&
+        dslm split --corpus work/clean.jsonl.gz --out-dir work/splits &&
+        dslm train --splits work/splits --out-dir work/model
+
+  # Score it, with the gates. Exits 2 if the evaluation cannot be trusted.
+  evaluate:
+    <<: *common
+    profiles: [tools]
+    command:
+      - evaluate
+      - --splits=work/splits
+      - --model=work/model
+      - --null=work/holdout.jsonl.gz
+      - --drop-shared
+      - --baseline=work/baseline.json
+      - --json-out=reports/evaluation.json
+      - --junit-out=reports/evaluation.xml
+      - --markdown-out=reports/evaluation.md
+
+  # Measure overlap on its own, without running an evaluation.
+  contamination:
+    <<: *common
+    profiles: [tools]
+    command:
+      - contamination
+      - --train=work/splits/train.jsonl.gz
+      - --evaluate=work/splits/test.jsonl.gz
+      - --null=work/holdout.jsonl.gz
+      - --drop-shared
