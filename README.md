@@ -1,5 +1,9 @@
 # domain-slm
 
+![Banner](docs/banner.png)
+
+> If this project is useful, a star helps other engineers find it.
+
 **A small domain language model you can trust.** A tokenizer and a classifier
 trained from scratch on CPU in seconds — and an evaluation that **refuses to
 report a number** when the split it was measured on overlaps the data the model
