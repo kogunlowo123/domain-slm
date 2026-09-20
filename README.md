@@ -191,3 +191,60 @@ docker run --rm --network none domain-slm:local doctor
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+<!-- project-structure -->
+## Project structure
+
+```text
+├── .github/
+├── docs/
+│   ├── ci.md
+│   ├── contamination.md
+│   ├── curation.md
+│   ├── model.md
+│   ├── reproducibility.md
+│   └── tokenizer.md
+├── examples/
+│   ├── model/
+│   ├── splits/
+│   ├── DATA-CARD.md
+│   ├── README.md
+│   ├── baseline.json
+│   ├── clean.jsonl.gz
+│   ├── contamination_demo.py
+│   ├── corpus.jsonl.gz
+│   └── … 3 more
+├── scripts/
+│   ├── build_site.py
+│   ├── check-pipeline.py
+│   └── smoke-test.sh
+├── security/
+│   ├── audit-exceptions.md
+│   └── audit-ignores.txt
+├── src/
+│   └── dslm/
+├── tests/
+│   ├── e2e/
+│   ├── integration/
+│   ├── meta/
+│   ├── security/
+│   ├── unit/
+│   ├── __init__.py
+│   └── conftest.py
+├── .dockerignore
+├── .env.example
+├── .gitattributes
+├── .gitignore
+├── .gitleaks.toml
+├── ARCHITECTURE.md
+├── CHANGELOG.md
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── Dockerfile
+… (truncated)
+```
+
+<!-- architecture -->
+## Architecture
+
+![Architecture diagram](docs/architecture.svg)
